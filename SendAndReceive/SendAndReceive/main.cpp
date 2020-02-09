@@ -37,7 +37,7 @@ int recieve() {
 	//（任意、必須コードではない（ソケットの初期設定はブロッキングモードなため）
 	// val = 0 : ブロッキングモード データが受信されるまで待機
 	// val = 1 : ノンブロッキング データが受信されなくても次の処理へ
-	u_long val = 1;
+	u_long val = 0;
 	ioctlsocket(sock, FIONBIO, &val);
 
 	// バッファ ここに受信したデータが入る サイズは自由に決められるが、char配列
@@ -47,10 +47,36 @@ int recieve() {
 	// 受信
 	// recv(ソケット, 受信するデータの格納先, データのバイト数, フラグ);
 	// バインドしていない場合は recvfrom(sock, buf, 5, 0, (struct sockaddr *)&addr, sizeof(addr)); でもOK？
-	recv(sock, buf, sizeof(buf), 0);
+	//recv(sock, buf, sizeof(buf), 0);
+	int hoge = 1;
+	sockaddr hogeAdder;
+	hoge = sizeof(hogeAdder);
+
+	while (1) {
+		int n = recvfrom(sock, buf, sizeof(buf), 0, &hogeAdder, &hoge);
+
+		if (n < 1) {
+			if (WSAGetLastError() == WSAEWOULDBLOCK) {
+				// まだ来ない。
+				printf("MADA KONAI\n");
+			}
+			else {
+				printf("error : 0x%x\n", WSAGetLastError());
+				break;
+			}
+		}
+		else {
+			printf("received data\n");
+			printf("%s\n", buf);
+			break;
+		}
+
+		// とりあえず一秒待ってみる
+		Sleep(1000);
+	}
 
 	// 出力
-	printf("%s\n", buf);
+	//printf("%s\n", buf);
 
 	// socketの破棄
 	closesocket(sock);
@@ -99,9 +125,14 @@ int send() {
 }
 
 int main() {
-	send();
+	//先に待ち構えておく
 	recieve();
+
+	//sender側はreceive();をコメントアウトしてsend();コメントアウトを外す
+	//send();
+
 
 	system("pause");
 	return 0;
+
 }
